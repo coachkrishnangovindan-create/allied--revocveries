@@ -56,6 +56,25 @@
       color: green;
       font-weight: bold;
     }
+    .driver-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #0078d7;
+    }
+    .delete-btn {
+      background: none;
+      border: none;
+      color: red;
+      font-size: 14px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -64,14 +83,19 @@
     <form id="entryForm">
       <label>Date</label>
       <input type="date" name="date" required />
+
       <label>Driver</label>
-      <select name="driver" required>
-        <option value="">Select Driver</option>
-        <option value="owne">owne</option>
-        <option value="aj">aj</option>
-      </select>
+      <div class="driver-row">
+        <select name="driver" id="driverSelect" required style="flex:1">
+          <option value="">Select Driver</option>
+        </select>
+        <button type="button" class="icon-btn" id="addDriverBtn">➕</button>
+        <button type="button" class="delete-btn" id="deleteDriverBtn">🗑️</button>
+      </div>
+
       <label>Category</label>
       <input type="text" name="category" placeholder="Category" />
+
       <label>Payment Method</label>
       <select name="payment_method">
         <option value="">Select</option>
@@ -79,33 +103,97 @@
         <option value="UPI">UPI</option>
         <option value="Bank Transfer">Bank Transfer</option>
       </select>
+
       <label>Part Description</label>
       <input type="text" name="part_description" placeholder="Part / Item Details" />
+
       <label>Amount</label>
-      <input type="number" name="amount" placeholder="Amount" required step="0.01" />
+      <input type="number" name="amount" placeholder="Amount" step="0.01" required />
+
       <label>Route</label>
       <input type="text" name="route" placeholder="Route" />
+
       <label>Quantity</label>
       <input type="number" name="quantity" placeholder="Quantity" />
+
       <label>Vendor Name</label>
       <input type="text" name="vendor_name" placeholder="Vendor Name" />
+
       <label>Location</label>
       <input type="text" name="location" placeholder="Location" />
+
       <label>Notes</label>
-      <textarea name="notes" placeholder="Additional Notes..." rows="3"></textarea>
+      <textarea name="notes" rows="3" placeholder="Additional Notes..."></textarea>
+
       <button type="submit">Submit Entry</button>
     </form>
-    <div class="success" id="msg"></div>
+    <div id="msg" class="success"></div>
   </div>
+
   <script>
+    const driverSelect = document.getElementById('driverSelect');
+    const addDriverBtn = document.getElementById('addDriverBtn');
+    const deleteDriverBtn = document.getElementById('deleteDriverBtn');
+
+    // Load drivers from localStorage or defaults
+    let drivers = JSON.parse(localStorage.getItem('drivers')) || ['Owen', 'AJ'];
+
+    function populateDrivers() {
+      driverSelect.innerHTML = '<option value="">Select Driver</option>';
+      drivers.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        driverSelect.appendChild(opt);
+      });
+    }
+
+    populateDrivers();
+
+    addDriverBtn.addEventListener('click', () => {
+      const newDriver = prompt('Enter new driver name:');
+      if (newDriver && !drivers.includes(newDriver)) {
+        drivers.push(newDriver);
+        localStorage.setItem('drivers', JSON.stringify(drivers));
+        populateDrivers();
+        alert(`${newDriver} added!`);
+      }
+    });
+
+    deleteDriverBtn.addEventListener('click', () => {
+      const current = driverSelect.value;
+      if (current && confirm(`Delete driver: ${current}?`)) {
+        drivers = drivers.filter(d => d !== current);
+        localStorage.setItem('drivers', JSON.stringify(drivers));
+        populateDrivers();
+      }
+    });
+
+    // Long press on mobile to delete driver
+    let pressTimer;
+    driverSelect.addEventListener('touchstart', () => {
+      pressTimer = setTimeout(() => {
+        const current = driverSelect.value;
+        if (current && confirm(`Delete driver: ${current}?`)) {
+          drivers = drivers.filter(d => d !== current);
+          localStorage.setItem('drivers', JSON.stringify(drivers));
+          populateDrivers();
+        }
+      }, 1000);
+    });
+    driverSelect.addEventListener('touchend', () => clearTimeout(pressTimer));
+
+    // Form submission logic
     const form = document.getElementById('entryForm');
     const msg = document.getElementById('msg');
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       msg.textContent = 'Submitting...';
-      // Replace this URL with your Google Apps Script Web App URL later
+
       const scriptURL = "YOUR_GOOGLE_SCRIPT_WEBAPP_URL_HERE";
       const formData = new FormData(form);
+
       try {
         const res = await fetch(scriptURL, { method: 'POST', body: formData });
         if (res.ok) {
